@@ -14,7 +14,7 @@ from mcp.types import (
     Tool,
 )
 
-from github_client import (
+from .github_client import (
     GitHubClient,
     GitHubClientError,
     RepositoryNotFoundError,

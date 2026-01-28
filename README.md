@@ -11,59 +11,107 @@ A Model Context Protocol (MCP) server for GitHub repository analytics. Provides 
 
 ## Prerequisites
 
-- **Python 3.11+**
+- **Python 3.11+** (for local development)
+- **Docker** (for containerized deployment)
 - **GitHub Personal Access Token** - Required for API authentication
   - Create one at: https://github.com/settings/tokens
   - Required scopes: `repo` (for private repos) or `public_repo` (for public repos only)
 
-## Installation
+## Quick Start with Docker
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd github-analytics-mcp
-   ```
+### 1. Clone and Configure
 
-2. Create and activate a virtual environment:
+```bash
+git clone https://github.com/Pyroxyl/github-analytics-mcp.git
+cd github-analytics-mcp
+
+# Configure environment
+cp .env.example .env
+# Edit .env and add your GITHUB_TOKEN
+```
+
+### 2. Build and Run
+
+```bash
+# Build the Docker image
+make build
+
+# Start the server
+make run
+
+# View logs
+make logs
+```
+
+### 3. Available Make Commands
+
+| Command | Description |
+|---------|-------------|
+| `make build` | Build Docker image |
+| `make run` | Start the MCP server container |
+| `make stop` | Stop all containers |
+| `make logs` | View container logs (follow mode) |
+| `make shell` | Open a shell in the running container |
+| `make clean` | Remove containers, images, and volumes |
+| `make rebuild` | Clean rebuild of the image |
+| `make status` | Show container status |
+| `make help` | Show all available commands |
+
+### Docker Compose (Alternative)
+
+```bash
+# Start MCP server only
+docker-compose up -d mcp-server
+
+# Start with Redis cache (for future use)
+docker-compose --profile with-cache up -d
+
+# Stop all services
+docker-compose down
+```
+
+## Local Development
+
+### Installation
+
+1. Create and activate a virtual environment:
    ```bash
    python3 -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. Install dependencies:
+2. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-4. Configure environment variables:
+3. Configure environment variables:
    ```bash
    cp .env.example .env
+   # Edit .env and add your GITHUB_TOKEN
    ```
 
-   Edit `.env` and add your GitHub Personal Access Token:
-   ```
-   GITHUB_TOKEN=your_github_personal_access_token_here
-   ```
-
-## Usage
-
-### Running the MCP Server
+### Running Locally
 
 ```bash
-# Activate virtual environment (if not already active)
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Activate virtual environment
+source venv/bin/activate
 
 # Run the server
-python src/server.py
+python -m src.server
 ```
 
-### Testing the Setup
+### Running Tests
 
 ```bash
-python test_mcp_server.py
+# Run API tests
+python test_real_api.py
+
+# Run unit tests
+pytest
 ```
 
-### MCP Client Configuration
+## MCP Client Configuration
 
 Add to your MCP client configuration (e.g., Claude Desktop):
 
@@ -72,11 +120,25 @@ Add to your MCP client configuration (e.g., Claude Desktop):
   "mcpServers": {
     "github-analytics": {
       "command": "python",
-      "args": ["src/server.py"],
+      "args": ["-m", "src.server"],
       "cwd": "/path/to/github-analytics-mcp",
       "env": {
         "GITHUB_TOKEN": "your_token_here"
       }
+    }
+  }
+}
+```
+
+### Using Docker with Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "github-analytics": {
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "--env-file", ".env", "github-analytics-mcp"],
+      "cwd": "/path/to/github-analytics-mcp"
     }
   }
 }
@@ -90,6 +152,23 @@ Add to your MCP client configuration (e.g., Claude Desktop):
 | `list_recent_commits` | List recent commits with SHA, author, message, and timestamp |
 | `analyze_contributors` | Get top contributors with contribution counts |
 | `get_language_breakdown` | Get programming language distribution as percentages |
+
+## Project Structure
+
+```
+github-analytics-mcp/
+├── src/
+│   ├── __init__.py
+│   ├── server.py          # MCP server entry point
+│   ├── github_client.py   # GitHub API client
+│   └── tools/             # MCP tool implementations
+├── tests/                 # Unit tests
+├── Dockerfile            # Container definition
+├── docker-compose.yml    # Multi-service orchestration
+├── Makefile             # Build automation
+├── requirements.txt     # Python dependencies
+└── .env.example        # Environment template
+```
 
 ## License
 
