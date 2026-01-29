@@ -1,0 +1,11 @@
+# Copy this file to terraform.tfvars and fill in values
+# cp terraform.tfvars.example terraform.tfvars
+
+namespace_name = "github-analytics"
+api_replicas   = 2
+image_tag      = "latest"
+image_name     = "github-analytics-api"
+
+# Sensitive - set via environment variable or terraform.tfvars (do NOT commit)
+# github_token = "ghp_xxxxxxxxxxxx"
+# Or use: terraform plan -var="github_token=$GITHUB_TOKEN"

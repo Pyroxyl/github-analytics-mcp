@@ -1,7 +1,9 @@
 # GitHub Analytics MCP Server - Makefile
 # Common commands for Docker operations
 
-.PHONY: build run stop logs shell clean rebuild test help api api-logs api-shell api-test
+.PHONY: build run stop logs shell clean rebuild test help api api-logs api-shell api-test \
+       k8s-deploy k8s-status k8s-logs k8s-delete \
+       terraform-init terraform-plan terraform-apply terraform-destroy
 
 # Default target
 .DEFAULT_GOAL := help
@@ -74,6 +76,38 @@ api-test:
 ## status: Show container status
 status:
 	docker-compose ps
+
+## k8s-deploy: Deploy to Kubernetes
+k8s-deploy:
+	bash k8s/deploy.sh
+
+## k8s-status: Show K8s deployment status
+k8s-status:
+	@kubectl -n github-analytics get pods,svc,hpa
+
+## k8s-logs: View API gateway pod logs
+k8s-logs:
+	kubectl -n github-analytics logs -f -l app=api-gateway
+
+## k8s-delete: Delete all K8s resources
+k8s-delete:
+	kubectl delete namespace github-analytics --ignore-not-found
+
+## terraform-init: Initialize Terraform
+terraform-init:
+	cd terraform && terraform init
+
+## terraform-plan: Preview Terraform changes (dry-run)
+terraform-plan:
+	cd terraform && terraform plan -var="github_token=$${GITHUB_TOKEN}"
+
+## terraform-apply: Apply Terraform configuration
+terraform-apply:
+	cd terraform && terraform apply -var="github_token=$${GITHUB_TOKEN}"
+
+## terraform-destroy: Destroy all Terraform-managed resources
+terraform-destroy:
+	cd terraform && terraform destroy -var="github_token=$${GITHUB_TOKEN}"
 
 ## help: Show this help message
 help:

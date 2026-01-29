@@ -1,5 +1,8 @@
 # GitHub Analytics MCP Server
 
+[![CI](https://github.com/Pyroxyl/github-analytics-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Pyroxyl/github-analytics-mcp/actions/workflows/ci.yml)
+[![Docker Build](https://github.com/Pyroxyl/github-analytics-mcp/actions/workflows/docker-build.yml/badge.svg)](https://github.com/Pyroxyl/github-analytics-mcp/actions/workflows/docker-build.yml)
+
 A Model Context Protocol (MCP) server for GitHub repository analytics. Provides tools to query repository statistics, commits, contributors, and language breakdowns.
 
 ## Features
@@ -153,6 +156,19 @@ Add to your MCP client configuration (e.g., Claude Desktop):
 | `analyze_contributors` | Get top contributors with contribution counts |
 | `get_language_breakdown` | Get programming language distribution as percentages |
 
+## CI/CD Pipeline
+
+```
+Push/PR → [CI] → Lint + Test
+Push to main → [Docker Build] → ghcr.io → [CD] → Kubernetes
+```
+
+- **CI**: Runs ruff lint + pytest on every push/PR (Python 3.11 & 3.12)
+- **Docker Build**: Builds and pushes images to GitHub Container Registry
+- **CD**: Deploys to Kubernetes via Terraform after successful build
+
+See [`.github/workflows/README.md`](.github/workflows/README.md) for details.
+
 ## Project Structure
 
 ```
@@ -163,11 +179,14 @@ github-analytics-mcp/
 │   ├── github_client.py   # GitHub API client
 │   └── tools/             # MCP tool implementations
 ├── tests/                 # Unit tests
-├── Dockerfile            # Container definition
-├── docker-compose.yml    # Multi-service orchestration
-├── Makefile             # Build automation
-├── requirements.txt     # Python dependencies
-└── .env.example        # Environment template
+├── k8s/                   # Kubernetes manifests
+├── terraform/             # Terraform IaC configuration
+├── .github/workflows/     # CI/CD pipelines
+├── Dockerfile             # Container definition
+├── docker-compose.yml     # Multi-service orchestration
+├── Makefile               # Build automation
+├── requirements.txt       # Python dependencies
+└── .env.example           # Environment template
 ```
 
 ## License

@@ -1,0 +1,53 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["Docker Build & Push"]
+    types: [completed]
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5"
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: terraform
+        run: |
+          terraform apply -auto-approve \
+            -var="github_token=${{ secrets.GH_ANALYTICS_TOKEN }}" \
+            -var="image_name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api" \
+            -var="image_tag=${{ github.event.workflow_run.head_sha }}"
+
+      - name: Health check
+        run: |
+          echo "Waiting for deployment to stabilize..."
+          sleep 30
+          kubectl -n github-analytics rollout status deployment/api-gateway --timeout=120s
+
+      - name: Verify pods
+        run: |
+          kubectl -n github-analytics get pods
+          kubectl -n github-analytics get svc
