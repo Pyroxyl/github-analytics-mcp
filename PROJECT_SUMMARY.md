@@ -111,13 +111,3 @@ make terraform-apply
 - 6 development phases
 - 10+ technologies integrated
 
-## Interview Talking Points
-
-1. **MCP Protocol**: Explain the Model Context Protocol and how it standardizes AI tool integration
-2. **Multi-stage Docker builds**: Smaller images, security benefits, build caching
-3. **Kubernetes architecture**: Deployments, Services, HPA for auto-scaling, health probes
-4. **Infrastructure as Code**: Why Terraform over raw kubectl, state management, variable-driven configs
-5. **CI/CD pipeline design**: Workflow triggers, separation of CI/CD concerns, automated deployment gates
-6. **API design**: RESTful gateway pattern wrapping protocol-specific backends (MCP → REST)
-7. **Security**: Secrets management (K8s Secrets, GitHub Secrets), sensitive variable handling in Terraform
-8. **Observability**: Health checks, readiness/liveness probes, resource limits
