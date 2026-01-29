@@ -1,5 +1,11 @@
 # GitHub API 客戶端
 # 封裝 GitHub REST API 的呼叫邏輯
+#
+# WHY a wrapper instead of using PyGithub directly: Callers should not know we
+# use PyGithub or that GitHub returns HTTP status codes. This class translates
+# raw API errors into semantic domain exceptions (RepositoryNotFoundError, etc.)
+# so both the MCP server and FastAPI gateway can handle errors without parsing
+# status codes. See docs/adr/ADR-002-exception-hierarchy.md.
 
 import os
 from typing import Optional

@@ -1,4 +1,4 @@
-# GitHub Analytics MCP Server
+# GitHub Analytics MCP Server — Architecture Reference Project
 
 **Query, analyze, and visualize any public GitHub repository — from the command line, browser, or AI agent.**
 
@@ -18,6 +18,8 @@ GitHub Analytics MCP Server is a production-ready microservice that turns the Gi
 It exposes two interfaces: a **RESTful API** (FastAPI with auto-generated Swagger docs) for direct HTTP access, and a **Model Context Protocol (MCP) server** that lets AI agents like Claude Desktop query GitHub data as a native tool.
 
 The entire stack — API gateway, MCP server, container orchestration, infrastructure provisioning, and CI/CD — is included and deployable with a single command.
+
+This project also serves as an **architecture reference implementation**: every layer is accompanied by design-decision documentation explaining *why* it is structured this way, not just *what* it does.
 
 ## Features
 
@@ -45,6 +47,8 @@ The entire stack — API gateway, MCP server, container orchestration, infrastru
 | Deployment | Automated CI/CD on every push | Manual release process |
 | Portability | Runs anywhere Docker/K8s runs | Environment-dependent |
 | API Docs | Auto-generated OpenAPI (Swagger UI) | Manual documentation |
+
+This is not just a tool — it is a **reference implementation** designed for studying architecture patterns. Every layer includes design-decision documentation explaining the reasoning behind its structure.
 
 ## Architecture
 
@@ -85,6 +89,50 @@ graph TB
     H -.->|Provisions| D
     I -.->|Deploys to| D
 ```
+
+## Design Philosophy
+
+### One domain, two interfaces, shared core
+
+`GitHubClient` is the single business-logic layer. The MCP Server and FastAPI Gateway are both thin adapters — they translate between their respective protocols and the shared core. Neither contains business logic, and neither duplicates the other.
+
+**Why two interfaces:** MCP serves AI agents over stdio; REST serves humans and programs over HTTP. Two protocols, two adapters, zero duplicated logic.
+
+### Error handling strategy
+
+Custom exception hierarchy (`RepositoryNotFoundError`, `AuthenticationError`, `RateLimitError`) translates GitHub HTTP status codes into semantic domain errors. The MCP server converts these into user-friendly text messages; the FastAPI gateway converts them into the corresponding HTTP status codes (404/401/429/502). Callers never need to know how the GitHub API works internally.
+
+### Infrastructure: three layers for three use cases
+
+- **Docker Compose** — local development. One command (`docker-compose up`) starts everything.
+- **Kubernetes manifests (`k8s/`)** — direct `kubectl apply`. Good for learning K8s and quick testing.
+- **Terraform (`terraform/`)** — state management, drift detection, multi-environment support. For production.
+
+All three coexist intentionally. Each serves a different stage of the deployment lifecycle.
+
+### Why these numbers
+
+- **HPA 2-5 replicas:** 2 guarantees availability (one pod can fail without downtime); 5 is a cost ceiling.
+- **70% CPU threshold:** leaves 30% buffer so existing pods absorb traffic spikes while new pods start (10-30s scheduling window).
+- **Resource limits (100m/500m CPU, 128Mi/256Mi memory):** FastAPI + uvicorn idles at ~30m CPU / ~50MB RAM. Limits prevent a runaway process from starving other pods.
+
+### Deliberate omissions
+
+- **No database** — this is a stateless proxy. Every request fetches fresh data from GitHub. Adding a DB would obscure the core architecture pattern.
+- **Redis is optional** — available via `docker-compose --profile with-cache up` to demonstrate Docker Compose profiles, but not wired into the application.
+- **No auth middleware** — authentication is orthogonal to the architecture being demonstrated. Including it would distract from the layered design.
+
+## Architecture Documentation
+
+For deeper dives into specific decisions:
+
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** — full architecture overview with layer diagram
+- **Architecture Decision Records (ADRs):**
+  - [ADR-001: Dual MCP + REST Interface](docs/adr/ADR-001-dual-interface.md)
+  - [ADR-002: Custom Exception Hierarchy](docs/adr/ADR-002-exception-hierarchy.md)
+  - [ADR-003: Multi-Stage Docker Build](docs/adr/ADR-003-multi-stage-docker.md)
+  - [ADR-004: Terraform and kubectl Coexistence](docs/adr/ADR-004-terraform-and-kubectl.md)
+  - [ADR-005: HPA Configuration Values](docs/adr/ADR-005-hpa-configuration.md)
 
 ## Quick Start
 

@@ -27,6 +27,10 @@ services:
     networks:
       - mcp-network
 
+  # WHY Redis is behind a profile: Redis is not required by the application.
+  # It exists to demonstrate Docker Compose profiles — `docker-compose --profile
+  # with-cache up` starts it, plain `docker-compose up` does not. This keeps the
+  # default dev experience simple while showing how optional services work.
   redis:
     image: redis:7-alpine
     container_name: github-analytics-redis

@@ -1,5 +1,8 @@
 # GitHub Analytics MCP Server
-# Multi-stage build for smaller image size
+# WHY multi-stage: The builder stage installs gcc for C-extension compilation.
+# The production stage copies only the compiled packages, keeping the final
+# image free of build tools (~100MB smaller, smaller attack surface).
+# See docs/adr/ADR-003-multi-stage-docker.md.
 
 FROM python:3.11-slim AS builder
 
@@ -33,7 +36,10 @@ COPY src/ ./src/
 # Expose port for future API gateway
 EXPOSE 8080
 
-# Health check (optional, for container orchestration)
+# WHY import-based health check: The MCP server uses stdio, not HTTP, so there
+# is no TCP port to probe. Verifying that the module imports successfully
+# confirms the Python environment and dependencies are intact — without
+# requiring curl/wget in the production image.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import src.server" || exit 1
 

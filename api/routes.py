@@ -18,11 +18,18 @@ from .models import (
     LanguagesResponse,
 )
 
+# WHY /api/v1 prefix: Allows non-breaking evolution. A future v2 can coexist
+# at /api/v2 while v1 continues serving existing consumers.
 router = APIRouter(prefix="/api/v1")
 
 
 def handle_github_error(e: GitHubClientError):
-    """Convert GitHubClientError to HTTPException."""
+    """Convert GitHubClientError to HTTPException.
+
+    WHY a bridging function: Domain exceptions carry semantic meaning but not HTTP
+    semantics. This bridge maps each domain error to the correct HTTP status code
+    so route handlers stay clean. See docs/adr/ADR-002-exception-hierarchy.md.
+    """
     if isinstance(e, RepositoryNotFoundError):
         raise HTTPException(status_code=404, detail=str(e))
     elif isinstance(e, AuthenticationError):

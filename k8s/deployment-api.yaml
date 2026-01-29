@@ -28,6 +28,12 @@ spec:
                 name: github-analytics-config
             - secretRef:
                 name: github-analytics-secret
+          # WHY two probes with different intervals:
+          # - Liveness (30s period): detects deadlocked processes. Longer interval
+          #   avoids restarting pods during transient GitHub API slowness.
+          # - Readiness (10s period): controls load balancer membership. Shorter
+          #   interval removes unhealthy pods from traffic quickly.
+          # See docs/adr/ADR-005-hpa-configuration.md for the full rationale.
           livenessProbe:
             httpGet:
               path: /health
@@ -44,6 +50,9 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
+          # WHY these resource values: FastAPI+uvicorn idles at ~30m CPU / ~50MB RAM.
+          # Requests (100m/128Mi) ensure fair scheduling; limits (500m/256Mi) prevent
+          # a runaway process from starving other pods on the node.
           resources:
             requests:
               cpu: 100m

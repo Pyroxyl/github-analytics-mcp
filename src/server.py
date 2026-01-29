@@ -26,7 +26,9 @@ from .github_client import (
 # 建立 MCP Server 實例
 server = Server("github-analytics")
 
-# 建立 GitHub 客戶端實例 (從環境變數讀取 token)
+# WHY lazy init: The MCP server module is imported at container startup (health
+# check does `import src.server`). Eagerly creating GitHubClient here would
+# require a valid GITHUB_TOKEN at import time, breaking the health check.
 github_client: GitHubClient | None = None
 
 
@@ -147,6 +149,9 @@ async def list_tools() -> list[Tool]:
     return TOOLS
 
 
+# WHY manual dispatch instead of a decorator registry: The MCP SDK's @server.call_tool()
+# gives us a single entry point. Explicit if/elif keeps the routing visible in one place
+# and avoids hidden magic — important for a reference project meant to be read.
 @server.call_tool()
 async def call_tool(name: str, arguments: dict[str, Any]) -> CallToolResult:
     """處理工具呼叫請求"""
