@@ -1,118 +1,202 @@
 # GitHub Analytics MCP Server
 
+**Query, analyze, and visualize any public GitHub repository — from the command line, browser, or AI agent.**
+
 [![CI](https://github.com/Pyroxyl/github-analytics-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Pyroxyl/github-analytics-mcp/actions/workflows/ci.yml)
 [![Docker Build](https://github.com/Pyroxyl/github-analytics-mcp/actions/workflows/docker-build.yml/badge.svg)](https://github.com/Pyroxyl/github-analytics-mcp/actions/workflows/docker-build.yml)
+![Python](https://img.shields.io/badge/Python-3.11+-blue)
+![Docker](https://img.shields.io/badge/Docker-ready-blue)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-ready-blue)
+![Terraform](https://img.shields.io/badge/Terraform-IaC-purple)
+![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-green)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
-A Model Context Protocol (MCP) server for GitHub repository analytics. Provides tools to query repository statistics, commits, contributors, and language breakdowns.
+---
+
+## Overview
+
+GitHub Analytics MCP Server is a production-ready microservice that turns the GitHub API into a simple, self-hosted analytics endpoint. Point it at any public repository and instantly get structured data on stars, forks, contributors, commit history, and language distribution.
+
+It exposes two interfaces: a **RESTful API** (FastAPI with auto-generated Swagger docs) for direct HTTP access, and a **Model Context Protocol (MCP) server** that lets AI agents like Claude Desktop query GitHub data as a native tool.
+
+The entire stack — API gateway, MCP server, container orchestration, infrastructure provisioning, and CI/CD — is included and deployable with a single command.
 
 ## Features
 
-- **get_repo_stats** - Get repository statistics (stars, forks, issues, watchers)
-- **list_recent_commits** - List recent commits with author and message details
-- **analyze_contributors** - Analyze top contributors and their contributions
-- **get_language_breakdown** - Get programming language distribution
+- 🔍 **Query any public GitHub repository** by owner/name
+- 📊 **Repository statistics** — stars, forks, issues, watchers
+- 👥 **Contributor analysis** — top contributors with commit counts
+- 📝 **Commit history** — recent commits with author and message details
+- 🌐 **RESTful API** with auto-generated OpenAPI/Swagger docs
+- 🤖 **MCP Protocol support** for AI agent integration (Claude Desktop, etc.)
+- 🐳 **Production-ready** with Docker multi-stage builds and Docker Compose
+- ☸️ **Kubernetes deployment** with Deployments, Services, Ingress, and HPA
+- 📈 **Auto-scaling** — Horizontal Pod Autoscaler (2–5 replicas, 70% CPU target)
+- 🔄 **Full CI/CD pipeline** — lint, test, build, and deploy via GitHub Actions
+- 🏗️ **Infrastructure as Code** — Terraform provisions the entire K8s stack
 
-## Prerequisites
+## Why This Project?
 
-- **Python 3.11+** (for local development)
-- **Docker** (for containerized deployment)
-- **GitHub Personal Access Token** - Required for API authentication
-  - Create one at: https://github.com/settings/tokens
-  - Required scopes: `repo` (for private repos) or `public_repo` (for public repos only)
+| Concern | This Project | Traditional Approach |
+|---------|-------------|----------------------|
+| Setup | `docker-compose up` or `make k8s-deploy` | Manual server provisioning |
+| Scalability | Auto-scaling with K8s HPA (2–5 replicas) | Manual capacity planning |
+| Infrastructure | `terraform apply` — one command | Multiple manual steps |
+| High Availability | Multi-replica with health checks | Complex setup required |
+| Monitoring | Liveness & readiness probes built in | Separate monitoring stack |
+| Deployment | Automated CI/CD on every push | Manual release process |
+| Portability | Runs anywhere Docker/K8s runs | Environment-dependent |
+| API Docs | Auto-generated OpenAPI (Swagger UI) | Manual documentation |
 
-## Quick Start with Docker
+## Architecture
 
-### 1. Clone and Configure
+```mermaid
+graph TB
+    subgraph "User Interface"
+        A[Web Browser / CLI]
+    end
+
+    subgraph "API Layer"
+        B[FastAPI Gateway<br/>Port 8080]
+        C[MCP Server<br/>stdio mode]
+    end
+
+    subgraph "Container Orchestration"
+        D[Kubernetes Cluster]
+        E[Docker Containers]
+        F[Auto-scaling HPA]
+    end
+
+    subgraph "External Services"
+        G[GitHub API]
+    end
+
+    subgraph "Infrastructure"
+        H[Terraform IaC]
+        I[CI/CD Pipeline]
+    end
+
+    A -->|HTTP/REST| B
+    A -->|MCP Protocol| C
+    B -->|GitHub Token| G
+    C -->|GitHub Token| G
+    B -.->|Deployed in| D
+    C -.->|Deployed in| D
+    D -->|Manages| E
+    D -->|Auto-scales| F
+    H -.->|Provisions| D
+    I -.->|Deploys to| D
+```
+
+## Quick Start
+
+### Option 1: Docker Compose (Fastest)
 
 ```bash
+# 1. Clone and configure
 git clone https://github.com/Pyroxyl/github-analytics-mcp.git
 cd github-analytics-mcp
-
-# Configure environment
 cp .env.example .env
 # Edit .env and add your GITHUB_TOKEN
+
+# 2. Start services
+docker-compose up -d
+
+# 3. Test the API
+curl http://localhost:8080/health
+curl http://localhost:8080/api/v1/repo/facebook/react/stats | jq
 ```
 
-### 2. Build and Run
+### Option 2: Kubernetes (Production)
 
 ```bash
-# Build the Docker image
+# 1. Build and deploy
 make build
+make k8s-deploy
 
-# Start the server
-make run
-
-# View logs
-make logs
+# 2. Access the API (LoadBalancer on port 80)
+curl http://localhost/health
+curl http://localhost/api/v1/repo/facebook/react/stats | jq
 ```
 
-### 3. Available Make Commands
-
-| Command | Description |
-|---------|-------------|
-| `make build` | Build Docker image |
-| `make run` | Start the MCP server container |
-| `make stop` | Stop all containers |
-| `make logs` | View container logs (follow mode) |
-| `make shell` | Open a shell in the running container |
-| `make clean` | Remove containers, images, and volumes |
-| `make rebuild` | Clean rebuild of the image |
-| `make status` | Show container status |
-| `make help` | Show all available commands |
-
-### Docker Compose (Alternative)
+### Option 3: Terraform (Full IaC)
 
 ```bash
-# Start MCP server only
-docker-compose up -d mcp-server
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars
 
-# Start with Redis cache (for future use)
-docker-compose --profile with-cache up -d
-
-# Stop all services
-docker-compose down
+terraform init
+terraform plan
+terraform apply
 ```
 
-## Local Development
+## Usage Examples
 
-### Installation
-
-1. Create and activate a virtual environment:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Configure environment variables:
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your GITHUB_TOKEN
-   ```
-
-### Running Locally
+### Repository Statistics
 
 ```bash
-# Activate virtual environment
-source venv/bin/activate
-
-# Run the server
-python -m src.server
+curl "http://localhost/api/v1/repo/facebook/react/stats" | jq
 ```
 
-### Running Tests
+```json
+{
+  "repository": "facebook/react",
+  "stars": 242591,
+  "forks": 50472,
+  "open_issues": 1138,
+  "watchers": 6690,
+  "description": "The library for web and native user interfaces.",
+  "language": "JavaScript"
+}
+```
+
+### Recent Commits
 
 ```bash
-# Run API tests
-python test_real_api.py
-
-# Run unit tests
-pytest
+curl "http://localhost/api/v1/repo/anthropics/anthropic-sdk-python/commits?limit=3" | jq
 ```
+
+### Top Contributors
+
+```bash
+curl "http://localhost/api/v1/repo/kubernetes/kubernetes/contributors?top_n=5" | jq
+```
+
+### Language Distribution
+
+```bash
+curl "http://localhost/api/v1/repo/microsoft/vscode/languages" | jq
+```
+
+```json
+{
+  "repository": "microsoft/vscode",
+  "languages": {
+    "TypeScript": 95.54,
+    "CSS": 1.49,
+    "JavaScript": 1.0,
+    "Rust": 0.61
+  }
+}
+```
+
+### Compare Projects
+
+```bash
+# Compare stars across projects
+curl -s "http://localhost/api/v1/repo/facebook/react/stats" | jq '.stars'
+curl -s "http://localhost/api/v1/repo/vuejs/vue/stats" | jq '.stars'
+```
+
+## Interactive API Documentation
+
+Visit **http://localhost/docs** (or `http://localhost:8080/docs` for Docker Compose) for the interactive Swagger UI where you can test all endpoints directly in the browser.
+
+![API Documentation](docs/images/api-docs.png)
+*Auto-generated OpenAPI documentation with try-it-out functionality*
+
+> **Note**: To add the screenshot, open `http://localhost/docs` in your browser, take a screenshot, and save it to `docs/images/api-docs.png`.
 
 ## MCP Client Configuration
 
@@ -133,7 +217,7 @@ Add to your MCP client configuration (e.g., Claude Desktop):
 }
 ```
 
-### Using Docker with Claude Desktop
+Or using Docker:
 
 ```json
 {
@@ -147,48 +231,169 @@ Add to your MCP client configuration (e.g., Claude Desktop):
 }
 ```
 
-## Available Tools
+## Tech Stack
 
-| Tool | Description |
-|------|-------------|
-| `get_repo_stats` | Get repository statistics including stars, forks, open issues, and watchers |
-| `list_recent_commits` | List recent commits with SHA, author, message, and timestamp |
-| `analyze_contributors` | Get top contributors with contribution counts |
-| `get_language_breakdown` | Get programming language distribution as percentages |
+| Layer | Technology |
+|-------|-----------|
+| **Backend** | Python 3.11+, FastAPI, PyGithub |
+| **Protocol** | Model Context Protocol (MCP) |
+| **Containerization** | Docker (multi-stage builds), Docker Compose |
+| **Orchestration** | Kubernetes — Deployments, Services, HPA, Ingress |
+| **Infrastructure** | Terraform |
+| **CI/CD** | GitHub Actions (lint → test → build → deploy) |
 
-## CI/CD Pipeline
+### DevOps Highlights
 
-```
-Push/PR → [CI] → Lint + Test
-Push to main → [Docker Build] → ghcr.io → [CD] → Kubernetes
-```
-
-- **CI**: Runs ruff lint + pytest on every push/PR (Python 3.11 & 3.12)
-- **Docker Build**: Builds and pushes images to GitHub Container Registry
-- **CD**: Deploys to Kubernetes via Terraform after successful build
-
-See [`.github/workflows/README.md`](.github/workflows/README.md) for details.
+- Multi-stage Docker builds for minimal image size
+- Kubernetes auto-scaling (2–5 replicas based on CPU)
+- Liveness & readiness probes for self-healing
+- Rolling updates with zero downtime
+- Automated lint, test, build, and deploy pipeline
 
 ## Project Structure
 
 ```
 github-analytics-mcp/
-├── src/
-│   ├── __init__.py
-│   ├── server.py          # MCP server entry point
-│   ├── github_client.py   # GitHub API client
-│   └── tools/             # MCP tool implementations
-├── tests/                 # Unit tests
-├── k8s/                   # Kubernetes manifests
-├── terraform/             # Terraform IaC configuration
-├── .github/workflows/     # CI/CD pipelines
-├── Dockerfile             # Container definition
-├── docker-compose.yml     # Multi-service orchestration
-├── Makefile               # Build automation
-├── requirements.txt       # Python dependencies
-└── .env.example           # Environment template
+├── src/                        # MCP Server
+│   ├── server.py               # MCP protocol entry point
+│   ├── github_client.py        # GitHub API client wrapper
+│   └── tools/                  # MCP tool implementations
+│       ├── repo_stats.py       #   get_repo_stats
+│       ├── commits.py          #   list_recent_commits
+│       ├── contributors.py     #   analyze_contributors
+│       └── languages.py        #   get_language_breakdown
+├── api/                        # FastAPI Gateway
+│   ├── main.py                 # App entry point
+│   ├── routes.py               # API route definitions
+│   ├── models.py               # Pydantic models
+│   └── dependencies.py         # Dependency injection
+├── k8s/                        # Kubernetes manifests
+│   ├── namespace.yaml
+│   ├── configmap.yaml
+│   ├── secret.yaml
+│   ├── deployment-api.yaml     # API gateway (2 replicas)
+│   ├── deployment-mcp.yaml     # MCP server
+│   ├── service-api.yaml        # LoadBalancer service
+│   ├── hpa-api.yaml            # Horizontal Pod Autoscaler
+│   ├── ingress.yaml
+│   └── deploy.sh               # Deployment script
+├── terraform/                  # Infrastructure as Code
+│   ├── main.tf
+│   ├── kubernetes.tf
+│   ├── providers.tf
+│   ├── variables.tf
+│   └── outputs.tf
+├── .github/workflows/          # CI/CD pipelines
+│   ├── ci.yml                  # Lint & test
+│   ├── docker-build.yml        # Build & push image
+│   └── cd.yml                  # Deploy to K8s
+├── tests/                      # Unit tests
+├── Dockerfile                  # Multi-stage container build
+├── docker-compose.yml          # Local multi-service setup
+├── Makefile                    # Convenience commands
+├── requirements.txt
+└── .env.example                # Environment template
 ```
+
+## Development
+
+### Prerequisites
+
+- Python 3.11+
+- Docker & Docker Compose
+- kubectl (for Kubernetes deployment)
+- Terraform (for IaC deployment)
+- GitHub Personal Access Token ([create one here](https://github.com/settings/tokens))
+
+### Local Development
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Run the MCP server
+python -m src.server
+
+# Run the API gateway
+uvicorn api.main:app --reload --port 8080
+
+# Run tests
+pytest tests/
+```
+
+### Make Commands
+
+| Command | Description |
+|---------|-------------|
+| `make build` | Build Docker image |
+| `make run` | Start with Docker Compose |
+| `make stop` | Stop all containers |
+| `make logs` | View container logs |
+| `make k8s-deploy` | Deploy to Kubernetes |
+| `make k8s-status` | Check K8s pod/service status |
+| `make clean` | Remove containers and images |
+| `make help` | Show all available commands |
+
+## CI/CD Pipeline
+
+```
+Push/PR → [CI] Lint + Test → [Docker Build] → ghcr.io → [CD] → Kubernetes
+```
+
+1. **CI** — Runs `ruff` lint and `pytest` on every push/PR (Python 3.11 & 3.12)
+2. **Docker Build** — Builds and pushes images to GitHub Container Registry
+3. **CD** — Deploys to Kubernetes via Terraform after successful build
+
+See [`.github/workflows/README.md`](.github/workflows/README.md) for details.
+
+## Production Deployment
+
+### High Availability
+- 2+ API gateway replicas with rolling updates
+- Automatic pod restart on failure via liveness probes
+- Readiness probes prevent traffic to unhealthy pods
+
+### Auto-Scaling
+- HPA scales from 2 to 5 replicas
+- Target: 70% CPU utilization
+- Handles traffic spikes automatically
+
+### Security
+- GitHub tokens stored as Kubernetes Secrets
+- No credentials in source code or git history
+- Ingress-ready for TLS termination
+
+## Use Cases
+
+- 📊 **Project Evaluation** — Quickly assess GitHub projects before adopting them
+- 🔍 **Trend Research** — Analyze language trends across popular repositories
+- 🤖 **AI Integration** — Enable AI agents to access GitHub data via MCP
+- 📈 **Metrics Dashboards** — Build custom dashboards with real-time GitHub stats
+- 🔬 **Open Source Research** — Study contributor patterns and project health
+
+## Roadmap
+
+- [ ] Redis caching layer for API responses
+- [ ] Prometheus metrics & Grafana dashboards
+- [ ] Rate limiting & API key authentication
+- [ ] Additional endpoints (pull requests, releases, workflows)
+- [ ] Multi-cloud examples (AWS EKS, GCP GKE, Azure AKS)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development workflow and guidelines.
 
 ## License
 
-MIT
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+Built with [Model Context Protocol](https://modelcontextprotocol.io/) by Anthropic, [FastAPI](https://fastapi.tiangolo.com/), and [PyGithub](https://github.com/PyGithub/PyGithub).
+
+---
+
+**⭐ If you find this project useful, please star it on GitHub!**
+
+[Issues](https://github.com/Pyroxyl/github-analytics-mcp/issues) · [Project Link](https://github.com/Pyroxyl/github-analytics-mcp)
