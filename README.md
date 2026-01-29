@@ -2,8 +2,6 @@
 
 **Query, analyze, and visualize any public GitHub repository — from the command line, browser, or AI agent.**
 
-[![CI](https://github.com/Pyroxyl/github-analytics-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Pyroxyl/github-analytics-mcp/actions/workflows/ci.yml)
-[![Docker Build](https://github.com/Pyroxyl/github-analytics-mcp/actions/workflows/docker-build.yml/badge.svg)](https://github.com/Pyroxyl/github-analytics-mcp/actions/workflows/docker-build.yml)
 ![Python](https://img.shields.io/badge/Python-3.11+-blue)
 ![Docker](https://img.shields.io/badge/Docker-ready-blue)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-ready-blue)
@@ -191,12 +189,14 @@ curl -s "http://localhost/api/v1/repo/vuejs/vue/stats" | jq '.stars'
 
 ## Interactive API Documentation
 
-Visit **http://localhost/docs** (or `http://localhost:8080/docs` for Docker Compose) for the interactive Swagger UI where you can test all endpoints directly in the browser.
+🌐 **Live API Docs**: http://localhost/docs (or `http://localhost:8080/docs` for Docker Compose)
 
-![API Documentation](docs/images/api-docs.png)
-*Auto-generated OpenAPI documentation with try-it-out functionality*
-
-> **Note**: To add the screenshot, open `http://localhost/docs` in your browser, take a screenshot, and save it to `docs/images/api-docs.png`.
+FastAPI auto-generates interactive Swagger UI where you can:
+- 📖 Browse all available endpoints
+- 🎮 Test APIs directly in your browser with "Try it out"
+- 📊 View request/response schemas
+- 💡 See example values for all parameters
+- ✨ Execute real API calls and see live responses
 
 ## MCP Client Configuration
 
